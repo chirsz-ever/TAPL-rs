@@ -1,0 +1,29 @@
+use crate::utils::Term;
+use Term::*;
+
+grammar;
+
+
+pub Terms: Vec<Term> = {
+    <v:(<Term> ";")*> => v
+};
+
+pub Term: Term = {
+    "true"  => True,
+    "false" => False,
+    "if" <t1:Term> "then" <t2:Term> "else" <t3:Term> =>
+        IfThenElse(Box::new(t1), Box::new(t2), Box::new(t3)),
+    "0" => Zero,
+    "succ" <Term>   => Succ(Box::new(<>)),
+    "pred" <Term>   => Pred(Box::new(<>)),
+    "iszero" <Term> => IsZero(Box::new(<>)),
+    "(" <Term> ")",
+};
+
+// custom lexer skip white characters and comments
+match {
+    r"\s*" => { },
+    r"//[^\n\r]*[\n\r]*" => { },
+    r"/\*([^\*]*\*+[^\*/])*([^\*]*\*+|[^\*])*\*/" => { },
+    _,
+}
