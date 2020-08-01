@@ -25,5 +25,10 @@ match {
     r"\s*" => { },
     r"//[^\n\r]*[\n\r]*" => { },
     r"/\*([^\*]*\*+[^\*/])*([^\*]*\*+|[^\*])*\*/" => { },
+    "true", "false", "if", "then", "else",
+    "0", "succ", "pred", "iszero",
+} else {
+    r"[a-zA-Z]\w*",  // ident
+    r"\d+",          // number
     _,
 }
