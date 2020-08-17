@@ -1,0 +1,47 @@
+use crate::utils::*;
+use Ast::*;
+use std::rc::Rc;
+
+grammar;
+
+
+pub REPLCommand: Command = <Command> ";"?;
+
+pub Commands: Vec<Command> = {
+    <v:(<Command> ";")*> => v
+};
+
+Command: Command = {
+    Term => Command::Eval(<>),
+    <ident:ID> "/" => Command::SymbolBind(ident.into()),
+    <ident:ID> "=" <t:Term> => Command::Bind(ident.into(), t),
+};
+
+Term: Ast = {
+    AppTerm,
+    LAMBDA <var:ID> "."? <expr:Term> => // "lambda" must be followed by whitespaces
+        Abs{ var: var.into(), expr: Rc::new(expr)},
+};
+
+AppTerm = {
+    ATerm,
+    <t1:AppTerm> <t2:ATerm> => App(Rc::new(t1), Rc::new(t2)),
+}
+
+ATerm = {
+    "(" <Term> ")",
+    <ident:ID> => ID(ident.into()),
+}
+
+// custom lexer skip white characters and comments
+match {
+    r"\s*" => { },
+    r"//[^\n\r]*[\n\r]*" => { },
+    r"/\*([^\*]|\*+[^/\*])*\*+/" => { },
+    r"λ|\\|lambda" => LAMBDA,
+    "_",
+} else {
+    r#"[\S--[λ\d\(\)\[\]{}",'`;\\\.=/]][\S--[\(\)\[\]{}",'`;\\\.=/]]*"# => ID,  // ident
+    r"\d+",                // number
+    _,
+}

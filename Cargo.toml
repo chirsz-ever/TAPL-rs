@@ -1,4 +1,5 @@
 [workspace]
 members = [
     "ch3-arith",
+    "ch5-untyped",
 ]
