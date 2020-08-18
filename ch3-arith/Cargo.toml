@@ -11,4 +11,4 @@ lalrpop = { version = "0.19", features = ["lexer"] }
 [dependencies]
 lalrpop-util = "0.19"
 rustyline    = "6.2"
-atty         = "0.2"
+structopt    = "0.3"

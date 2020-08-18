@@ -4,21 +4,32 @@ use lalrpop_util::lalrpop_mod;
 
 lalrpop_mod!(arith);
 
-use atty::Stream;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
+use structopt::StructOpt;
 
-use std::io::{self, prelude::*};
+use std::io;
+use std::path::PathBuf;
 
 use utils::*;
 
+#[derive(Debug, StructOpt)]
+#[structopt(author, about = "Rust implemention of arith")]
+struct Opt {
+    /// Activate interactive mode
+    #[structopt(short)]
+    interactive: bool,
+
+    /// Input file
+    #[structopt(parse(from_os_str))]
+    input: Option<PathBuf>,
+}
+
 fn main() -> io::Result<()> {
-    if atty::is(Stream::Stdin) {
-        repl();
-    } else {
+    let opt = Opt::from_args();
+    if let Some(ref input_path) = opt.input {
         let parser = arith::TermsParser::new();
-        let mut input = String::new();
-        io::stdin().read_to_string(&mut input)?;
+        let input = std::fs::read_to_string(input_path)?;
         match parser.parse(&input) {
             Ok(terms) => {
                 for term in terms {
@@ -30,6 +41,11 @@ fn main() -> io::Result<()> {
             }
             Err(e) => eprintln!("Error: {}", e),
         }
+        if opt.interactive {
+            repl();
+        }
+    } else {
+        repl();
     }
     Ok(())
 }
