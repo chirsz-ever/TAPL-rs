@@ -185,10 +185,17 @@ fn index2bind(ctx: &Context, mut n: usize) -> Option<(Rc<str>, Binder)> {
 #[allow(non_camel_case_types)]
 pub struct pw<'a, 'b>(pub &'a Term, pub &'b Context);
 
-fn fmt_var(f: &mut fmt::Formatter<'_>, idx: usize, ctx: &Context) -> fmt::Result {
+fn write_var(f: &mut fmt::Formatter<'_>, idx: usize, ctx: &Context) -> fmt::Result {
     match index2bind(ctx, idx) {
         Some((varname, _)) => write!(f, "{}", varname),
         None => write!(f, "[bad index {}]", idx),
+    }
+}
+
+fn get_freshname(var: &str, ctx: &Context) -> Rc<str> {
+    match name2index(var, ctx) {
+        Some(_) => get_freshname(&format!("{}'", var), ctx),
+        None => format!("{}", var).into(),
     }
 }
 
@@ -196,13 +203,16 @@ impl fmt::Display for pw<'_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let pw(t, ctx) = self;
         match t {
-            Var(idx) => fmt_var(f, *idx, ctx),
-            Abs { var, expr } => write!(
-                f,
-                "λ{}. {}",
-                var,
-                pw(expr, &Context::cons(var, &NameBind, ctx))
-            ),
+            Var(idx) => write_var(f, *idx, ctx),
+            Abs { var, expr } => {
+                let freshname = get_freshname(&var, ctx);
+                write!(
+                    f,
+                    "λ{}. {}",
+                    freshname,
+                    pw(expr, &Context::cons(&freshname, &NameBind, ctx))
+                )
+            }
             App(t1, t2) => {
                 match t1.deref() {
                     Var(..) | App(_, _) => write!(f, "{}", pw(t1, ctx))?,
@@ -210,7 +220,7 @@ impl fmt::Display for pw<'_, '_> {
                 }
                 write!(f, " ")?;
                 match t2.deref() {
-                    Var(idx) => fmt_var(f, *idx, ctx),
+                    Var(idx) => write_var(f, *idx, ctx),
                     Abs { .. } | App(_, _) => write!(f, "({})", pw(&t2, ctx)),
                 }
             }
